@@ -505,22 +505,22 @@ body::before{
 /* NOTE: capability descriptions below are general guidance only and not verified
    official benchmarks — judge real performance from your own testing. */
 const MODELS = [
-  { id:"gpt-5.5", name:"gpt-5.5", tier:"PRO", badge:"badge-heavy",
+  { id:"gpt-5.5", name:"gpt-5.5", tier:"PRO", badge:"badge-heavy", suspended:false,
     desc:"General-purpose flagship-class model. Good for large multi-file apps, complex reasoning, and long-context tasks." },
-  { id:"claude-opus-4-6", name:"claude-opus-4-6", tier:"PRO", badge:"badge-heavy",
-    desc:"Heavy-duty coding & reasoning model. Suited to full websites, multi-page apps, and detailed UI/UX work." },
-  { id:"claude-opus-4-7", name:"claude-opus-4-7", tier:"PRO", badge:"badge-heavy",
-    desc:"Higher completion ratio variant — best for premium, polish-heavy frontend work and long documents." },
-  { id:"claude-opus-4-8", name:"claude-opus-4-8", tier:"PRO", badge:"badge-heavy",
-    desc:"Top-end variant in this set — large apps, animation-heavy UI, big code generations." },
-  { id:"glm-5.2", name:"glm-5.2", tier:"LITE", badge:"badge-light",
+  { id:"glm-5.2", name:"glm-5.2", tier:"LITE", badge:"badge-light", suspended:false,
     desc:"Lighter, faster, cheaper ratio — good fit for small scripts, quick edits, and short chat tasks." },
+  { id:"claude-opus-4-6", name:"claude-opus-4-6", tier:"PRO", badge:"badge-heavy", suspended:true,
+    desc:"Heavy-duty coding & reasoning model. ⚠ Currently suspended provider-side (see System Notice on agentrouter dashboard)." },
+  { id:"claude-opus-4-7", name:"claude-opus-4-7", tier:"PRO", badge:"badge-heavy", suspended:true,
+    desc:"Higher completion ratio variant. ⚠ Currently suspended provider-side (see System Notice on agentrouter dashboard)." },
+  { id:"claude-opus-4-8", name:"claude-opus-4-8", tier:"PRO", badge:"badge-heavy", suspended:true,
+    desc:"Top-end variant in this set. ⚠ Currently suspended provider-side (see System Notice on agentrouter dashboard)." },
 ];
 
 let state = {
   chats: JSON.parse(localStorage.getItem("nexus_chats") || "[]"),
   activeId: localStorage.getItem("nexus_active") || null,
-  model: localStorage.getItem("nexus_model") || MODELS[1].id,
+  model: localStorage.getItem("nexus_model") || MODELS[0].id,
   baseUrl: localStorage.getItem("nexus_baseurl") || "https://agentrouter.org/v1",
 };
 
@@ -558,10 +558,10 @@ function renderModelDropdown(){
   modelDropdown.innerHTML = MODELS.map(m => `
     <div class="model-option ${m.id===state.model?'sel':''}" data-id="${m.id}">
       <div>
-        <div class="mo-name">${m.name}</div>
+        <div class="mo-name">${m.name} ${m.suspended ? '⚠' : ''}</div>
         <div class="mo-desc">${m.desc}</div>
       </div>
-      <div class="mo-badge ${m.badge}">${m.tier}</div>
+      <div class="mo-badge ${m.suspended ? 'badge-light' : m.badge}" style="${m.suspended ? 'background:rgba(232,97,95,0.15);color:#f0a3a1;border:1px solid rgba(232,97,95,0.3);' : ''}">${m.suspended ? 'SUSPENDED' : m.tier}</div>
     </div>
   `).join("") + `
     <div class="add-custom">
