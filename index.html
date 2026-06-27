@@ -757,37 +757,99 @@ async function handleSend(){
   appendTyping();
   sendBtn.disabled = true;
 
+  const endpoint = state.baseUrl.replace(/\/$/,"") + "/chat/completions";
+  const reqBody = {
+    model: state.model,
+    messages: chat.messages.map(m=>({role:m.role, content:m.content})),
+    stream:false
+  };
+  const keyUsed = getKey();
+  const maskedKey = keyUsed ? (keyUsed.slice(0,7) + "…" + keyUsed.slice(-4) + " (length: "+keyUsed.length+")") : "(empty)";
+
   try{
-    const res = await fetch(state.baseUrl.replace(/\/$/,"") + "/chat/completions", {
+    const res = await fetch(endpoint, {
       method:"POST",
       headers:{
         "Content-Type":"application/json",
-        "Authorization":"Bearer " + getKey()
+        "Authorization":"Bearer " + keyUsed
       },
-      body: JSON.stringify({
-        model: state.model,
-        messages: chat.messages.map(m=>({role:m.role, content:m.content})),
-        stream:false
-      })
+      body: JSON.stringify(reqBody)
     });
-    const data = await res.json();
+    const rawText = await res.text();
+    let data = null;
+    try{ data = JSON.parse(rawText); }catch(parseErr){ /* not JSON */ }
     removeTyping();
+
     if(!res.ok){
-      const errMsg = data?.error?.message || JSON.stringify(data);
-      chat.messages.push({ role:"assistant", content:"⚠ Request failed: " + errMsg });
+      const errMsg = data?.error?.message || data?.message || rawText || "Unknown error";
+      chat.messages.push({ role:"assistant", content: buildDebugConsole({
+        ok:false, status:res.status, statusText:res.statusText,
+        endpoint, model: state.model, maskedKey, errMsg, rawText
+      })});
     } else {
-      const reply = data?.choices?.[0]?.message?.content || "(no content returned)";
-      chat.messages.push({ role:"assistant", content: reply });
+      const reply = data?.choices?.[0]?.message?.content;
+      if(reply){
+        chat.messages.push({ role:"assistant", content: reply });
+      } else {
+        chat.messages.push({ role:"assistant", content: buildDebugConsole({
+          ok:true, status:res.status, statusText:res.statusText,
+          endpoint, model: state.model, maskedKey,
+          errMsg:"Server returned 200 OK but no message content was found in the expected place.",
+          rawText
+        })});
+      }
     }
   }catch(err){
     removeTyping();
-    chat.messages.push({ role:"assistant", content:"⚠ Network or connection error: " + err.message });
+    chat.messages.push({ role:"assistant", content: buildDebugConsole({
+      ok:false, status:"NETWORK", statusText:err.name,
+      endpoint, model: state.model, maskedKey,
+      errMsg: err.message, rawText:"(request never reached server — check Base URL, internet connection, or CORS block)"
+    })});
   }
   sendBtn.disabled = false;
   save(); renderChatList(); renderMessages();
 }
 
-/* ============== Suggestion chips ============== */
+function buildDebugConsole({ok, status, statusText, endpoint, model, maskedKey, errMsg, rawText}){
+  const statusIcon = ok ? "✅" : "🔴";
+  const verdict = ok ? "Server responded OK, but content was missing — see raw response below." : diagnose(status, errMsg, rawText);
+  let out = "**" + statusIcon + " Debug Console — Request Diagnostics**\n\n";
+  out += "```\n";
+  out += "STATUS        : " + status + " " + (statusText||"") + "\n";
+  out += "ENDPOINT      : " + endpoint + "\n";
+  out += "MODEL SENT    : " + model + "\n";
+  out += "API KEY USED  : " + maskedKey + "\n";
+  out += "ERROR MESSAGE : " + (errMsg||"(none)") + "\n";
+  out += "```\n\n";
+  out += "**Likely reason:** " + verdict + "\n\n";
+  out += "**Raw server response:**\n```\n" + (rawText ? rawText.slice(0,1200) : "(empty)") + "\n```";
+  return out;
+}
+function diagnose(status, errMsg, rawText){
+  const msg = (errMsg||"").toLowerCase() + " " + (rawText||"").toLowerCase();
+  if(status===401 || msg.includes("unauthorized") || msg.includes("invalid api key") || msg.includes("invalid_api_key")){
+    return "Your API key is being rejected by the server (invalid, expired, revoked, or not yet approved). This is NOT a code problem — check the key on the provider's dashboard, and confirm any required account verification (e.g. Discord join) is complete.";
+  }
+  if(status===403){
+    return "The server understood the key but refused access — possibly your account/key doesn't have permission for this specific model, or the model name is wrong/unavailable on your plan.";
+  }
+  if(status===404){
+    return "The endpoint URL itself was not found. Double-check the Base URL in Settings matches exactly what the provider documents.";
+  }
+  if(status===429){
+    return "Rate limit or quota exceeded — too many requests, or your account ran out of credits/balance.";
+  }
+  if(status===400){
+    return "The request body was malformed or the model name is not recognized by the server — check the exact model ID spelling in Settings.";
+  }
+  if(status==="NETWORK"){
+    return "The request never reached the server. This usually means: no internet connection, wrong Base URL, or the provider is blocking direct browser (CORS) requests.";
+  }
+  return "Server rejected the request for a reason not auto-classified above — read the raw response below for the exact wording.";
+}
+
+
 document.querySelectorAll(".suggest-chip").forEach(chip=>{
   chip.addEventListener("click", ()=>{
     promptEl.value = chip.dataset.p; autoGrow(); promptEl.focus();
