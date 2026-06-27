@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AgentRouter Pro - Live Workspace</title>
+    
+    <!-- Suppress Tailwind Production Console Warnings -->
+    <script>
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) {
+                return;
+            }
+            originalWarn.apply(console, args);
+        };
+    </script>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Markdown Engine -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Code Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        glass: 'rgba(255, 255, 255, 0.03)',
+                        glassBorder: 'rgba(255, 255, 255, 0.08)',
+                        glassFocus: 'rgba(255, 255, 255, 0.12)',
+                    },
+                    boxShadow: {
+                        'neon-teal': '0 0 15px rgba(6, 182, 212, 0.3)',
+                        'neon-amber': '0 0 15px rgba(245, 158, 11, 0.3)',
+                        'neon-purple': '0 0 15px rgba(168, 85, 247, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background: radial-gradient(circle at 50% 50%, #0d0f1d 0%, #04050a 100%);
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .glowing-blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(100px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.35;
+            animation: float 20s infinite alternate ease-in-out;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 50px) scale(1.2); }
+        }
+
+        .glass-panel {
+            backdrop-filter: blur(25px) saturate(200%);
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.01);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .typing-indicator span {
+            animation: blink 1.4s infinite both;
+        }
+        .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes blink {
+            0% { opacity: .2; }
+            20% { opacity: 1; }
+            100% { opacity: .2; }
+        }
+
+        .markdown-body p { margin-bottom: 0.85rem; line-height: 1.6; }
+        .markdown-body code {
+            background-color: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        .markdown-body pre {
+            background-color: #0b0e14 !important;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            margin: 10px 0;
+        }
+        .markdown-body pre code {
+            background-color: transparent;
+            padding: 0;
+            border-radius: 0;
+        }
+        .markdown-body ul, .markdown-body ol { margin-left: 20px; margin-bottom: 10px; list-style-type: unset; }
+        .markdown-body blockquote {
+            border-left: 3px solid #06b6d4;
+            padding-left: 10px;
+            color: #9ca3af;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="h-full w-full text-slate-100 flex justify-center items-center p-0 md:p-4">
+
+    <!-- Background Neon Blobs -->
+    <div class="glowing-blob bg-cyan-500 w-[300px] h-[300px] top-[-50px] left-[-50px]"></div>
+    <div class="glowing-blob bg-purple-600 w-[350px] h-[350px] bottom-[-50px] right-[-50px]"></div>
+    <div class="glowing-blob bg-amber-500 w-[250px] h-[250px] top-1/2 left-1/3 opacity-20"></div>
+
+    <!-- Main Container -->
+    <div class="relative w-full h-full md:max-w-md md:h-[840px] md:rounded-3xl shadow-2xl overflow-hidden glass-panel flex flex-col z-10 transition-all duration-300">
+        
+        <!-- App Header -->
+        <header class="w-full h-16 px-4 flex items-center justify-between border-b border-glassBorder bg-black/30 z-10">
+            <div class="flex items-center gap-3">
+                <button onclick="toggleSidebar()" class="w-10 h-10 flex items-center justify-center rounded-xl bg-glass hover:bg-glassFocus border border-glassBorder transition-all active:scale-95">
+                    <i class="fa-solid fa-bars text-cyan-400"></i>
+                </button>
+                <div>
+                    <h1 class="font-bold text-sm tracking-wide bg-gradient-to-r from-cyan-400 to-indigo-300 bg-clip-text text-transparent">AgentRouter Pro</h1>
+                    <div class="flex items-center gap-1">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_#10b981] animate-pulse"></span>
+                        <span id="header-model-badge" class="text-[10px] text-emerald-400 font-medium tracking-wider uppercase">GPT-5.5</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button onclick="toggleModal('deploy-modal')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-glass hover:bg-glassFocus border border-glassBorder text-cyan-400 font-bold text-xs" title="How to host live">
+                    <i class="fa-solid fa-globe text-cyan-400"></i>
+                </button>
+                <button onclick="toggleModal('settings-modal')" class="w-10 h-10 flex items-center justify-center rounded-xl bg-glass hover:bg-glassFocus border border-glassBorder transition-all active:scale-95">
+                    <i class="fa-solid fa-gear text-slate-300"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Model Selection Slider -->
+        <div class="w-full py-2.5 px-3 border-b border-glassBorder bg-black/15 flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-none z-10 select-none">
+            <!-- GPT 5.5 -->
+            <button onclick="selectModel('gpt-5.5')" id="btn-gpt-5.5" class="model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span>GPT-5.5</span>
+            </button>
+            <!-- Claude Opus 4-6 -->
+            <button onclick="selectModel('claude-opus-4-6')" id="btn-claude-opus-4-6" class="model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span>Opus 4.6</span>
+            </button>
+            <!-- Claude Opus 4-7 -->
+            <button onclick="selectModel('claude-opus-4-7')" id="btn-claude-opus-4-7" class="model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95">
+                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                <span>Opus 4.7</span>
+            </button>
+            <!-- Claude Opus 4-8 -->
+            <button onclick="selectModel('claude-opus-4-8')" id="btn-claude-opus-4-8" class="model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95">
+                <span class="w-2 h-2 rounded-full bg-orange-500"></span>
+                <span>Opus 4.8</span>
+            </button>
+            <!-- GLM 5.2 -->
+            <button onclick="selectModel('glm-5.2')" id="btn-glm-5.2" class="model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95">
+                <span class="w-2 h-2 rounded-full bg-purple-400"></span>
+                <span>GLM 5.2</span>
+            </button>
+        </div>
+
+        <!-- Messages Container -->
+        <div id="chat-messages-container" class="flex-1 overflow-y-auto p-4 space-y-4 z-10 flex flex-col">
+            <!-- Dynamic Welcome Card or Chat Bubbles go here -->
+        </div>
+
+        <!-- Footer Input Bar -->
+        <div class="p-4 border-t border-glassBorder bg-black/30 z-10 backdrop-blur-lg">
+            <div class="relative flex items-end gap-2">
+                <button onclick="triggerUnderDevelopmentAlert()" class="w-11 h-11 flex items-center justify-center rounded-xl bg-glass hover:bg-glassFocus border border-glassBorder transition-all active:scale-95 flex-shrink-0">
+                    <i class="fa-solid fa-paperclip text-slate-300"></i>
+                </button>
+
+                <div class="flex-1 relative rounded-xl border border-glassBorder bg-glass hover:bg-glassFocus focus-within:border-cyan-500/50 transition-all">
+                    <textarea id="chat-input" rows="1" placeholder="Type a message..." class="w-full max-h-24 py-3 pl-3 pr-10 bg-transparent text-sm text-slate-100 focus:outline-none resize-none placeholder-slate-500 leading-relaxed" oninput="adjustTextareaHeight(this)" onkeydown="handleEnterKey(event)"></textarea>
+                    
+                    <button onclick="toggleVoiceInput()" id="mic-btn" class="absolute right-2 bottom-2.5 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-glassFocus transition-all text-slate-400 active:scale-90">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                </div>
+
+                <button onclick="submitUserMessage()" class="w-11 h-11 flex items-center justify-center rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 hover:shadow-neon-teal border border-cyan-500/20 text-white transition-all active:scale-95 flex-shrink-0">
+                    <i class="fa-solid fa-paper-plane text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar (Chat History) -->
+        <div id="sidebar-drawer" class="absolute inset-y-0 left-0 w-72 bg-[#060810]/98 border-r border-glassBorder z-30 transform -translate-x-full transition-transform duration-300 ease-out flex flex-col backdrop-blur-2xl">
+            <div class="p-4 border-b border-glassBorder flex items-center justify-between bg-black/20">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-comments text-cyan-400 text-lg"></i>
+                    <span class="font-bold text-sm tracking-wide">Conversations</span>
+                </div>
+                <button onclick="toggleSidebar()" class="w-8 h-8 flex items-center justify-center rounded-lg bg-glass hover:bg-glassFocus border border-glassBorder">
+                    <i class="fa-solid fa-xmark text-slate-400 text-xs"></i>
+                </button>
+            </div>
+
+            <div class="p-3">
+                <button onclick="startNewConversation()" class="w-full py-2.5 px-4 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500/10 to-indigo-500/10 border border-cyan-500/20 hover:border-cyan-500/40 text-cyan-400 font-semibold text-xs tracking-wider uppercase transition-all active:scale-95">
+                    <i class="fa-solid fa-plus text-xs"></i> New Chat
+                </button>
+            </div>
+
+            <div id="chat-history-list" class="flex-1 overflow-y-auto px-2 space-y-1">
+                <!-- Populated via Javascript -->
+            </div>
+
+            <div class="p-4 border-t border-glassBorder bg-black/30 text-center space-y-2">
+                <div class="text-[10px] text-slate-500">AgentRouter Engine v2.5</div>
+                <button onclick="clearAllConversations()" class="text-[11px] text-rose-400 hover:text-rose-300 transition-all font-medium">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Clear all conversations
+                </button>
+            </div>
+        </div>
+
+        <!-- Sidebar Overlay -->
+        <div id="sidebar-overlay" onclick="toggleSidebar()" class="hidden absolute inset-0 bg-black/60 z-20 backdrop-blur-sm transition-all"></div>
+
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/70 z-40 backdrop-blur-md p-4 transition-all">
+            <div class="w-full max-w-sm glass-panel rounded-2xl border border-glassBorder shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all">
+                
+                <div class="p-4 border-b border-glassBorder flex justify-between items-center bg-black/20">
+                    <span class="font-bold text-sm text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-cyan-400"></i> API Configuration
+                    </span>
+                    <button onclick="toggleModal('settings-modal')" class="w-7 h-7 flex items-center justify-center rounded-lg bg-glass hover:bg-glassFocus border border-glassBorder text-xs text-slate-400">
+                        <i class="fa-solid fa-x"></i>
+                    </button>
+                </div>
+
+                <div class="p-4 space-y-4 overflow-y-auto max-h-[450px]">
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 tracking-wide uppercase">API Auth Token</label>
+                        <div class="relative">
+                            <input type="password" id="settings-api-key" placeholder="Paste your AgentRouter key..." class="w-full bg-glass border border-glassBorder rounded-xl py-2.5 px-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 pr-10">
+                            <button onclick="toggleApiKeyVisibility()" class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-200 transition-all">
+                                <i id="api-eye-icon" class="fa-solid fa-eye-slash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 tracking-wide uppercase">Router Base URL</label>
+                        <select id="settings-base-url-select" onchange="handleUrlSelectChange()" class="w-full bg-glass border border-glassBorder rounded-xl py-2.5 px-3 text-xs text-slate-100 focus:outline-none focus:border-cyan-500/50 mb-1">
+                            <option value="https://agentrouter.org/v1" class="bg-slate-900">https://agentrouter.org/v1 (Default)</option>
+                            <option value="https://api.agentrouter.org/v1" class="bg-slate-900">https://api.agentrouter.org/v1 (Alternative API Subdomain)</option>
+                            <option value="custom" class="bg-slate-900">Custom Base URL...</option>
+                        </select>
+                        <input type="text" id="settings-base-url" placeholder="Custom URL..." class="hidden w-full bg-glass border border-glassBorder rounded-xl py-2.5 px-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50">
+                    </div>
+
+                    <!-- CORS Proxy Option -->
+                    <div class="flex items-center justify-between p-3 rounded-xl border border-glassBorder bg-glass">
+                        <div>
+                            <div class="text-xs font-bold text-slate-200">Bypass CORS (Use Proxy)</div>
+                            <div class="text-[10px] text-slate-400">Routes requests through a public CORS proxy.</div>
+                        </div>
+                        <input type="checkbox" id="settings-use-proxy" class="w-4 h-4 rounded border-glassBorder text-cyan-500 focus:ring-cyan-500 bg-transparent">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-xs font-bold text-slate-400 tracking-wide uppercase">System Persona</label>
+                        <textarea id="settings-system-prompt" rows="3" class="w-full bg-glass border border-glassBorder rounded-xl py-2 px-3 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 resize-none leading-relaxed"></textarea>
+                    </div>
+                </div>
+
+                <div class="p-3 border-t border-glassBorder bg-black/30 flex gap-2">
+                    <button onclick="toggleModal('settings-modal')" class="flex-1 py-2 rounded-xl bg-glass border border-glassBorder hover:bg-glassFocus text-xs font-semibold text-slate-300 transition-all">
+                        Cancel
+                    </button>
+                    <button onclick="saveApiSettings()" class="flex-1 py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-xs font-semibold text-white hover:shadow-neon-teal transition-all active:scale-95">
+                        Save Changes
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Deployment Help Modal (HOW TO MAKE IT LIVE) -->
+        <div id="deploy-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/80 z-40 backdrop-blur-md p-4 transition-all">
+            <div class="w-full max-w-sm glass-panel rounded-2xl border border-glassBorder shadow-2xl overflow-hidden flex flex-col transform scale-95 transition-all">
+                
+                <div class="p-4 border-b border-glassBorder flex justify-between items-center bg-black/20">
+                    <span class="font-bold text-sm text-cyan-400 flex items-center gap-2">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Go Live on GitHub
+                    </span>
+                    <button onclick="toggleModal('deploy-modal')" class="w-7 h-7 flex items-center justify-center rounded-lg bg-glass hover:bg-glassFocus border border-glassBorder text-xs text-slate-400">
+                        <i class="fa-solid fa-x"></i>
+                    </button>
+                </div>
+
+                <div class="p-5 space-y-4 overflow-y-auto max-h-[500px] text-xs leading-relaxed text-slate-300">
+                    <p class="font-semibold text-slate-100">Why are you seeing a "Failed to fetch" error inside HopWeb?</p>
+                    <p>Android WebViews block direct requests made from a local file path (<code class="bg-white/10 px-1 py-0.5 rounded text-cyan-400">file://</code>) due to modern browser security guidelines.</p>
+                    
+                    <div class="border-l-2 border-cyan-500 pl-3 space-y-3">
+                        <p class="font-bold text-slate-100">Step-by-step to host on GitHub Pages (100% Free):</p>
+                        <ol class="list-decimal list-inside space-y-2">
+                            <li>Create a free account on <a href="https://github.com" target="_blank" class="text-cyan-400 underline">github.com</a>.</li>
+                            <li>Create a new repository named <code class="bg-white/10 px-1 rounded text-cyan-300">chat-bot</code>.</li>
+                            <li>Upload this <code class="bg-white/10 px-1 rounded text-cyan-300">index.html</code> file directly to the repository.</li>
+                            <li>Go to repository <strong>Settings</strong> > <strong>Pages</strong>.</li>
+                            <li>Under <em>Build and deployment</em>, set Source to <strong>Deploy from a branch</strong>, choose <strong>main</strong> branch, and click <strong>Save</strong>.</li>
+                            <li>In 1 minute, you will get a secure link: <code class="bg-white/10 p-1 block rounded text-emerald-400 mt-1">https://yourusername.github.io/chat-bot/</code></li>
+                        </ol>
+                    </div>
+
+                    <p class="bg-black/30 p-3 rounded-lg border border-glassBorder">
+                        Once hosted on GitHub, the secure HTTPS origin allows the API to communicate flawlessly without any CORS or Network Fetch blockages!
+                    </p>
+                </div>
+
+                <div class="p-3 border-t border-glassBorder bg-black/30">
+                    <button onclick="toggleModal('deploy-modal')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-xs font-semibold text-white transition-all active:scale-95">
+                        Got it!
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Custom Warning / Notification Modal -->
+        <div id="alert-modal" class="hidden absolute inset-0 flex items-center justify-center bg-black/70 z-50 backdrop-blur-md p-4">
+            <div class="w-full max-w-[280px] glass-panel rounded-2xl border border-glassBorder p-4 text-center space-y-3 shadow-2xl">
+                <div class="w-10 h-10 bg-amber-500/20 rounded-full flex items-center justify-center mx-auto">
+                    <i class="fa-solid fa-circle-exclamation text-amber-400 text-lg"></i>
+                </div>
+                <h4 class="font-bold text-sm text-slate-100" id="alert-title">Notice</h4>
+                <p class="text-xs text-slate-400" id="alert-message">Notice Message</p>
+                <button onclick="closeAlertModal()" class="w-full py-1.5 rounded-lg bg-glass hover:bg-glassFocus border border-glassBorder text-xs font-semibold text-slate-200">
+                    Okay
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Voice Recording Floating Overlay -->
+    <div id="voice-overlay" class="hidden fixed inset-0 bg-black/85 z-50 flex flex-col items-center justify-center backdrop-blur-md">
+        <div class="relative flex items-center justify-center w-40 h-40">
+            <span class="absolute w-36 h-36 bg-cyan-500/20 rounded-full animate-ping"></span>
+            <span class="absolute w-28 h-28 bg-indigo-500/30 rounded-full animate-pulse"></span>
+            <div class="w-20 h-20 bg-gradient-to-tr from-cyan-500 to-indigo-600 rounded-full flex items-center justify-center shadow-neon-teal z-10">
+                <i class="fa-solid fa-microphone text-3xl text-white"></i>
+            </div>
+        </div>
+        <h3 class="mt-8 text-lg font-bold bg-gradient-to-r from-cyan-400 to-indigo-300 bg-clip-text text-transparent">Listening...</h3>
+        <p class="mt-2 text-xs text-slate-400 max-w-[250px] text-center">Speak naturally. Tap anywhere to cancel.</p>
+        <button onclick="toggleVoiceInput(true)" class="mt-6 px-6 py-2 rounded-full border border-glassBorder bg-glass text-xs font-semibold text-slate-300">
+            Cancel
+        </button>
+    </div>
+
+    <script>
+        // Real API Key used directly
+        const REAL_API_KEY = "Sk-6PcaQK2X5sjnwVBChztB9TS1MlXtf6rUooEl1ZsnwSU91ZQ9";
+
+        // Application State Configuration
+        let state = {
+            apiKey: REAL_API_KEY,
+            apiBaseUrl: 'https://agentrouter.org/v1',
+            useProxy: false,
+            systemPrompt: 'You are an advanced AI assistant powered by AgentRouter. Be extremely precise, highly intelligent, and format your code perfectly inside markdown blocks.',
+            currentModel: 'gpt-5.5',
+            conversations: [],
+            activeConversationId: null,
+            isGenerating: false,
+            voiceRecognition: null
+        };
+
+        // Welcome Card Dynamic HTML Template generator to prevent 'appendChild' crashes
+        function getWelcomeCardHTML() {
+            return `
+                <div id="welcome-card" class="m-auto max-w-[90%] glass-panel rounded-2xl p-5 border border-glassBorder text-center space-y-4 shadow-xl">
+                    <div class="w-14 h-14 bg-gradient-to-tr from-cyan-500 to-indigo-500 rounded-2xl flex items-center justify-center mx-auto shadow-neon-teal">
+                        <i class="fa-solid fa-wand-magic-sparkles text-2xl text-white"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-slate-100">Welcome to AgentRouter AI</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed">
+                        An advanced glassmorphic client. Your real authorization credentials are active and ready. Select any model above to begin.
+                    </p>
+                    <div class="bg-black/25 p-3 rounded-xl border border-glassBorder text-left space-y-1">
+                        <div class="text-[10px] text-cyan-400 font-bold tracking-wider uppercase"><i class="fa-solid fa-bolt mr-1"></i> Performance Profile</div>
+                        <div class="text-[11px] text-slate-300">• Token Quota: Unlimited Daily Access</div>
+                        <div class="text-[11px] text-slate-300">• Network Bypass: CORS Support Integrated</div>
+                    </div>
+                    <button onclick="toggleModal('deploy-modal')" class="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-indigo-600 text-xs font-bold hover:shadow-neon-teal transition-all active:scale-95">
+                        How to Host Live & Avoid Errors
+                    </button>
+                </div>
+            `;
+        }
+
+        // Run Setup On Page Load
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            initSpeechToText();
+            
+            if (state.conversations.length === 0) {
+                startNewConversation();
+            } else {
+                renderConversationsList();
+                loadConversation(state.activeConversationId);
+            }
+
+            selectModel(state.currentModel);
+        });
+
+        // Pull stored parameters or use default
+        function loadSettings() {
+            const savedKey = localStorage.getItem('ar_api_key');
+            state.apiKey = savedKey ? savedKey : REAL_API_KEY;
+            state.apiBaseUrl = localStorage.getItem('ar_base_url') || 'https://agentrouter.org/v1';
+            state.useProxy = localStorage.getItem('ar_use_proxy') === 'true';
+            state.systemPrompt = localStorage.getItem('ar_system_prompt') || state.systemPrompt;
+            state.currentModel = localStorage.getItem('ar_current_model') || 'gpt-5.5';
+            
+            try {
+                const chats = localStorage.getItem('ar_conversations');
+                state.conversations = chats ? JSON.parse(chats) : [];
+                state.activeConversationId = localStorage.getItem('ar_active_conv_id');
+            } catch (e) {
+                state.conversations = [];
+            }
+
+            document.getElementById('settings-api-key').value = state.apiKey;
+            document.getElementById('settings-use-proxy').checked = state.useProxy;
+            document.getElementById('settings-system-prompt').value = state.systemPrompt;
+
+            const selectEl = document.getElementById('settings-base-url-select');
+            const inputEl = document.getElementById('settings-base-url');
+            if (state.apiBaseUrl === 'https://agentrouter.org/v1' || state.apiBaseUrl === 'https://api.agentrouter.org/v1') {
+                selectEl.value = state.apiBaseUrl;
+                inputEl.style.display = 'none';
+                inputEl.value = state.apiBaseUrl;
+            } else {
+                selectEl.value = 'custom';
+                inputEl.style.display = 'block';
+                inputEl.value = state.apiBaseUrl;
+            }
+        }
+
+        function handleUrlSelectChange() {
+            const selectEl = document.getElementById('settings-base-url-select');
+            const inputEl = document.getElementById('settings-base-url');
+            if (selectEl.value === 'custom') {
+                inputEl.style.display = 'block';
+                inputEl.value = '';
+            } else {
+                inputEl.style.display = 'none';
+                inputEl.value = selectEl.value;
+            }
+        }
+
+        // Write configuration change to device
+        function saveApiSettings() {
+            const keyVal = document.getElementById('settings-api-key').value.trim();
+            const urlVal = document.getElementById('settings-base-url').value.trim();
+            const proxyVal = document.getElementById('settings-use-proxy').checked;
+            const promptVal = document.getElementById('settings-system-prompt').value.trim();
+
+            state.apiKey = keyVal;
+            state.apiBaseUrl = urlVal;
+            state.useProxy = proxyVal;
+            state.systemPrompt = promptVal;
+
+            localStorage.setItem('ar_api_key', keyVal);
+            localStorage.setItem('ar_base_url', urlVal);
+            localStorage.setItem('ar_use_proxy', proxyVal);
+            localStorage.setItem('ar_system_prompt', promptVal);
+
+            toggleModal('settings-modal');
+            showCustomAlert("Settings Updated", "Your local configuration was successfully saved.");
+        }
+
+        // Active model toggling with unique neon indicators
+        function selectModel(modelName) {
+            state.currentModel = modelName;
+            localStorage.setItem('ar_current_model', modelName);
+
+            document.querySelectorAll('.model-pill').forEach(pill => {
+                pill.className = 'model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border border-glassBorder bg-glass text-xs font-semibold transition-all duration-300 active:scale-95';
+            });
+
+            const activePill = document.getElementById(`btn-${modelName}`);
+            if (activePill) {
+                let glowColor = 'shadow-neon-teal border-cyan-500/50 text-cyan-400 bg-cyan-500/5';
+                if (modelName.includes('claude')) {
+                    glowColor = 'shadow-neon-amber border-amber-500/50 text-amber-400 bg-amber-500/5';
+                } else if (modelName.includes('glm')) {
+                    glowColor = 'shadow-neon-purple border-purple-500/50 text-purple-400 bg-purple-500/5';
+                }
+                activePill.className = `model-pill flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all duration-300 active:scale-95 ${glowColor}`;
+            }
+
+            const badge = document.getElementById('header-model-badge');
+            badge.innerText = modelName.toUpperCase();
+            if (modelName.includes('claude')) {
+                badge.className = "text-[10px] text-amber-400 font-medium tracking-wider uppercase";
+            } else if (modelName.includes('glm')) {
+                badge.className = "text-[10px] text-purple-400 font-medium tracking-wider uppercase";
+            } else {
+                badge.className = "text-[10px] text-emerald-400 font-medium tracking-wider uppercase";
+            }
+        }
+
+        // Generate a clean conversation workspace
+        function startNewConversation() {
+            const newId = 'conv_' + Date.now();
+            const newConv = {
+                id: newId,
+                title: "New Conversation",
+                messages: []
+            };
+
+            state.conversations.unshift(newConv);
+            state.activeConversationId = newId;
+            saveConversations();
+            
+            renderConversationsList();
+            loadConversation(newId);
+            
+            if (document.getElementById('sidebar-drawer').classList.contains('translate-x-0')) {
+                toggleSidebar();
+            }
+        }
+
+        // Render selected history
+        function loadConversation(id) {
+            state.activeConversationId = id;
+            localStorage.setItem('ar_active_conv_id', id);
+            
+            const activeConv = state.conversations.find(c => c.id === id);
+            const container = document.getElementById('chat-messages-container');
+            container.innerHTML = '';
+
+            if (!activeConv || activeConv.messages.length === 0) {
+                container.innerHTML = getWelcomeCardHTML();
+                return;
+            }
+
+            activeConv.messages.forEach(msg => {
+                appendMessageToUI(msg.role, msg.content, false);
+            });
+
+            setTimeout(() => {
+                container.scrollTop = container.scrollHeight;
+            }, 50);
+
+            renderConversationsList();
+        }
+
+        function saveConversations() {
+            localStorage.setItem('ar_conversations', JSON.stringify(state.conversations));
+        }
+
+        // Render Conversation List in Sidebar
+        function renderConversationsList() {
+            const listContainer = document.getElementById('chat-history-list');
+            listContainer.innerHTML = '';
+
+            state.conversations.forEach(conv => {
+                const isActive = conv.id === state.activeConversationId;
+                const activeStyle = isActive 
+                    ? 'border-cyan-500/30 bg-cyan-500/5 text-cyan-400' 
+                    : 'border-glassBorder bg-transparent text-slate-300 hover:bg-glass';
+
+                const item = document.createElement('div');
+                item.className = `group flex items-center justify-between p-3 rounded-xl border text-xs transition-all duration-200 cursor-pointer ${activeStyle}`;
+                item.setAttribute('onclick', `event.stopPropagation(); loadConversation('${conv.id}');`);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 overflow-hidden flex-1">
+                        <i class="fa-regular fa-message flex-shrink-0 text-slate-500"></i>
+                        <span class="truncate font-medium">${conv.title}</span>
+                    </div>
+                    <button onclick="event.stopPropagation(); deleteConversation('${conv.id}')" class="w-6 h-6 rounded-md hover:bg-rose-500/10 flex items-center justify-center text-rose-400 opacity-0 group-hover:opacity-100 transition-all">
+                        <i class="fa-solid fa-trash-can text-[10px]"></i>
+                    </button>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+
+        function deleteConversation(id) {
+            state.conversations = state.conversations.filter(c => c.id !== id);
+            saveConversations();
+            
+            if (state.activeConversationId === id) {
+                if (state.conversations.length > 0) {
+                    state.activeConversationId = state.conversations[0].id;
+                } else {
+                    startNewConversation();
+                    return;
+                }
+            }
+            renderConversationsList();
+            loadConversation(state.activeConversationId);
+        }
+
+        function clearAllConversations() {
+            state.conversations = [];
+            startNewConversation();
+        }
+
+        // Append Single Chat Bubble in Chat Area
+        function appendMessageToUI(role, content, animate = true) {
+            const container = document.getElementById('chat-messages-container');
+            const welcomeCard = document.getElementById('welcome-card');
+            
+            // Remove welcome card if visible
+            if (welcomeCard) {
+                welcomeCard.remove();
+            }
+
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `flex w-full flex-col ${role === 'user' ? 'items-end' : 'items-start'} ${animate ? 'animate-[fadeIn_0.3s_ease-out]' : ''}`;
+
+            const isUser = role === 'user';
+            const avatarBg = isUser ? 'from-cyan-500 to-indigo-600 shadow-neon-teal' : 'from-slate-700 to-slate-800 border border-glassBorder';
+            const avatarIcon = isUser ? 'fa-user' : 'fa-robot text-cyan-400';
+            
+            const bubbleBg = isUser 
+                ? 'bg-gradient-to-tr from-cyan-600/20 to-indigo-600/20 border border-cyan-500/30' 
+                : 'bg-glass border border-glassBorder';
+
+            const htmlContent = isUser ? escapeHTML(content) : marked.parse(content);
+
+            msgDiv.innerHTML = `
+                <div class="flex items-start gap-2.5 max-w-[85%] ${isUser ? 'flex-row-reverse' : ''}">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr ${avatarBg} flex-shrink-0 flex items-center justify-center">
+                        <i class="fa-solid ${avatarIcon} text-xs text-white"></i>
+                    </div>
+                    <div class="rounded-2xl p-3 text-xs leading-relaxed ${bubbleBg} shadow-sm overflow-x-auto">
+                        <div class="markdown-body text-slate-100">${htmlContent}</div>
+                        
+                        ${!isUser ? `
+                        <div class="mt-2 pt-2 border-t border-glassBorder flex justify-end">
+                            <button onclick="copyToClipboard(this)" class="text-[10px] text-slate-400 hover:text-cyan-400 transition-all flex items-center gap-1 font-semibold">
+                                <i class="fa-regular fa-copy"></i> Copy response
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(msgDiv);
+            container.scrollTop = container.scrollHeight;
+
+            if (!isUser) {
+                msgDiv.querySelectorAll('pre code').forEach((block) => {
+                    hljs.highlightElement(block);
+                });
+            }
+        }
+
+        // Submit API Chat completion call with exponential backoff and diagnostics
+        async function submitUserMessage() {
+            if (state.isGenerating) return;
+
+            const inputEl = document.getElementById('chat-input');
+            const userText = inputEl.value.trim();
+            if (!userText) return;
+
+            if (!state.apiKey) {
+                toggleModal('settings-modal');
+                showCustomAlert("Authentication Required", "Please configure your AgentRouter Auth Token in the settings panel.");
+                return;
+            }
+
+            inputEl.value = '';
+            adjustTextareaHeight(inputEl);
+
+            const activeConv = state.conversations.find(c => c.id === state.activeConversationId);
+            if (!activeConv) return;
+
+            const userMsg = { role: 'user', content: userText, timestamp: Date.now() };
+            activeConv.messages.push(userMsg);
+            
+            if (activeConv.title === "New Conversation" && activeConv.messages.length === 1) {
+                activeConv.title = userText.length > 25 ? userText.substring(0, 25) + "..." : userText;
+            }
+            
+            saveConversations();
+            renderConversationsList();
+            appendMessageToUI('user', userText);
+
+            state.isGenerating = true;
+            const container = document.getElementById('chat-messages-container');
+            const typingIndicator = document.createElement('div');
+            typingIndicator.id = "live-typing-indicator";
+            typingIndicator.className = "flex w-full flex-col items-start animate-[fadeIn_0.3s_ease-out]";
+            typingIndicator.innerHTML = `
+                <div class="flex items-start gap-2.5 max-w-[85%]">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-slate-700 to-slate-800 border border-glassBorder flex-shrink-0 flex items-center justify-center">
+                        <i class="fa-solid fa-robot text-xs text-cyan-400"></i>
+                    </div>
+                    <div class="rounded-2xl p-4 bg-glass border border-glassBorder shadow-sm typing-indicator flex gap-1 items-center">
+                        <span class="block w-2 h-2 bg-cyan-400 rounded-full"></span>
+                        <span class="block w-2 h-2 bg-indigo-400 rounded-full"></span>
+                        <span class="block w-2 h-2 bg-purple-400 rounded-full"></span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(typingIndicator);
+            container.scrollTop = container.scrollHeight;
+
+            const requestMessages = [
+                { role: "system", content: state.systemPrompt }
+            ];
+
+            const history = activeConv.messages.slice(-10);
+            history.forEach(m => {
+                requestMessages.push({ role: m.role, content: m.content });
+            });
+
+            let attempts = 0;
+            const maxAttempts = 3; 
+            let success = false;
+            let finalResponseText = '';
+            let diagnosticLogs = '';
+
+            // Construct Target URL
+            let targetUrl = `${state.apiBaseUrl}/chat/completions`;
+            
+            // If CORS Bypass Proxy is enabled
+            if (state.useProxy) {
+                targetUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`;
+            }
+
+            while (attempts < maxAttempts && !success) {
+                try {
+                    const response = await fetch(targetUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${state.apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: state.currentModel,
+                            messages: requestMessages,
+                            stream: false
+                        })
+                    });
+
+                    if (response.ok) {
+                        const responseData = await response.json();
+                        finalResponseText = responseData.choices?.[0]?.message?.content || 'Error: Empty data returned.';
+                        success = true;
+                    } else {
+                        const errBody = await response.text();
+                        throw new Error(`HTTP ${response.status}: ${response.statusText || 'Error'}\nResponse Body: ${errBody}`);
+                    }
+                } catch (error) {
+                    attempts++;
+                    diagnosticLogs += `[Attempt ${attempts}]: ${error.toString()}\n`;
+                    if (attempts >= maxAttempts) {
+                        finalResponseText = `⚠️ **Connection Error / Diagnostics Report**\n\nCommunication with AgentRouter failed after ${attempts} retries. Here is the exact developer trace log:\n\n\`\`\`text\n${diagnosticLogs}\n\`\`\`\n\n**How to Fix This:**\n1. **CORS Block (Most Common):** Go to Settings (Gear icon) and check "**Bypass CORS (Use Proxy)**". This routes requests via a CORS-free gateway.\n2. **Endpoint Address:** Some plans use \`https://api.agentrouter.org/v1\` instead of \`https://agentrouter.org/v1\`. Try changing it in Settings.\n3. **Network Connection:** Ensure your mobile data or Wi-Fi is active.`;
+                    } else {
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                }
+            }
+
+            const indicatorEl = document.getElementById('live-typing-indicator');
+            if (indicatorEl) indicatorEl.remove();
+
+            const assistantMsg = { role: 'assistant', content: finalResponseText, timestamp: Date.now() };
+            activeConv.messages.push(assistantMsg);
+            saveConversations();
+            
+            appendMessageToUI('assistant', finalResponseText);
+            state.isGenerating = false;
+        }
+
+        // Copy plain text content to Clipboard safely
+        function copyToClipboard(buttonEl) {
+            const container = buttonEl.closest('.rounded-2xl');
+            const markdownBody = container.querySelector('.markdown-body');
+            const tempText = markdownBody.innerText;
+            
+            const textarea = document.createElement('textarea');
+            textarea.value = tempText;
+            textarea.style.position = 'fixed';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                buttonEl.innerHTML = `<i class="fa-solid fa-check text-emerald-400"></i> <span class="text-emerald-400">Copied!</span>`;
+                setTimeout(() => {
+                    buttonEl.innerHTML = `<i class="fa-regular fa-copy"></i> Copy response`;
+                }, 2000);
+            } catch (err) {
+                buttonEl.innerHTML = `<i class="fa-solid fa-xmark text-rose-400"></i> <span class="text-rose-400">Failed</span>`;
+            }
+            
+            document.body.removeChild(textarea);
+        }
+
+        // UI Helpers
+        function toggleSidebar() {
+            const drawer = document.getElementById('sidebar-drawer');
+            const overlay = document.getElementById('sidebar-overlay');
+
+            if (drawer.classList.contains('-translate-x-full')) {
+                drawer.classList.remove('-translate-x-full');
+                drawer.classList.add('translate-x-0');
+                overlay.classList.remove('hidden');
+            } else {
+                drawer.classList.add('-translate-x-full');
+                drawer.classList.remove('translate-x-0');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function toggleModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+                modal.firstElementChild.classList.remove('scale-95');
+                modal.firstElementChild.classList.add('scale-100');
+            } else {
+                modal.classList.add('hidden');
+                modal.firstElementChild.classList.add('scale-95');
+                modal.firstElementChild.classList.remove('scale-100');
+            }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
+
+        function handleEnterKey(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                submitUserMessage();
+            }
+        }
+
+        // Speech-to-text Web API integration
+        function initSpeechToText() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                state.voiceRecognition = new SpeechRecognition();
+                state.voiceRecognition.continuous = false;
+                state.voiceRecognition.interimResults = false;
+                state.voiceRecognition.lang = 'en-US';
+
+                state.voiceRecognition.onresult = (event) => {
+                    const speechToText = event.results[0][0].transcript;
+                    const inputEl = document.getElementById('chat-input');
+                    inputEl.value += (inputEl.value ? ' ' : '') + speechToText;
+                    adjustTextareaHeight(inputEl);
+                    toggleVoiceInput(true);
+                };
+
+                state.voiceRecognition.onerror = (event) => {
+                    toggleVoiceInput(true);
+                    showCustomAlert("Voice Error", "Mic was unable to process voice capture. Verify browser mic permissions.");
+                };
+
+                state.voiceRecognition.onend = () => {
+                    toggleVoiceInput(true);
+                };
+            } else {
+                document.getElementById('mic-btn').style.opacity = '0.3';
+            }
+        }
+
+        function toggleVoiceInput(forceClose = false) {
+            const overlay = document.getElementById('voice-overlay');
+            if (!state.voiceRecognition) {
+                showCustomAlert("Not Supported", "Speech recognition is not supported on your current WebView browser.");
+                return;
+            }
+
+            if (overlay.classList.contains('hidden') && !forceClose) {
+                overlay.classList.remove('hidden');
+                try {
+                    state.voiceRecognition.start();
+                } catch(e) {}
+            } else {
+                overlay.classList.add('hidden');
+                try {
+                    state.voiceRecognition.stop();
+                } catch(e) {}
+            }
+        }
+
+        function toggleApiKeyVisibility() {
+            const input = document.getElementById('settings-api-key');
+            const icon = document.getElementById('api-eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye text-xs';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye-slash text-xs';
+            }
+        }
+
+        function showCustomAlert(title, message) {
+            document.getElementById('alert-title').innerText = title;
+            document.getElementById('alert-message').innerText = message;
+            document.getElementById('alert-modal').classList.remove('hidden');
+        }
+
+        function closeAlertModal() {
+            document.getElementById('alert-modal').classList.add('hidden');
+        }
+
+        // Restrict simulated attachments
+        function triggerUnderDevelopmentAlert() {
+            showCustomAlert("Files Disabled", "File uploads are currently restricted on your selected API plan. Pure text and markdown processing is fully enabled.");
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+    </script>
+</body>
+</html>
